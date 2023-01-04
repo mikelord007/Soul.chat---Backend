@@ -53,7 +53,7 @@ const exchangeRTCData = (soul1, soul2) => {
 
 const connectSouls = () => {
     Object.keys(interests).forEach((key) => {
-        if(interests[key].length > 1) {
+        if(interests[key]?.length > 1) {
             exchangeRTCData(interests[key][0],interests[key][1]);
             clearSoulFromMemory(interests[key][1])
             clearSoulFromMemory(interests[key][0])
@@ -89,7 +89,12 @@ io.on("connection", (socket) => {
 
   socket.on("passingPeerData", (peerData, soul1Data, soul2ID) => {
     console.log("here passing peer data")
-    io.to(soul2ID).emit("matchMade",peerData, soul1Data)
+    io.to(soul2ID).emit("matchMade",peerData, soul1Data, socket.id)
+  })
+
+  socket.on("rePassingPeerData", (peerData, soul2ID) => {
+    console.log("repassing")
+    io.to(soul2ID).emit("rePass",peerData)
   })
 
 });
@@ -100,7 +105,7 @@ setInterval(() => {
 }, 600)
 
 setInterval(() => {
-    console.log("soulsActive: ", soulsActive,"\ninterests: ", interests)
+    console.log("soulsActive: ", soulsActive,"\ninterests: ", interests, "\nnum active: ", io.sockets.sockets.size)
 },2000)
 
 httpServer.listen(PORT,() => {
