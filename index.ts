@@ -21,7 +21,6 @@ const soulsActive: SoulsActive = {}
 const FreeSouls: Array<string> = []
 
 const clearSoulFromMemory = (socketId) => {
-    console.log("clearing user: ", socketId)
 
     if(socketId in soulsActive) {
 
@@ -47,8 +46,7 @@ const clearSoulFromMemory = (socketId) => {
 
 const exchangeRTCData = (soul1, soul2) => {
     const soul2Data = soulsActive[soul2]
-
-    io.to(soul1).emit("initiate",soul2Data, soul2)
+    io.to(soul1).emit("initiateWebRTC",soul2Data, soul2)
 }
 
 const connectSouls = () => {
@@ -67,41 +65,41 @@ const connectSouls = () => {
     }
 }
 
-io.on("connection", (socket) => {
+const setupSocketListeners = (socket) => {
 
-  socket.on("interests", (data) => {
+    socket.on("interests", (data) => {
+        soulsActive[socket.id] = data;
     
-    soulsActive[socket.id] = data;
-
-    data.interests?.forEach((interest) => {
-        if(interest in interests)
-            interests[interest].push(socket.id)
-        else
-            interests[interest] = [socket.id]
+        data.interests?.forEach((interest) => {
+            if(interest in interests)
+                interests[interest].push(socket.id)
+            else
+                interests[interest] = [socket.id]
+        })
+    
+    })
+    
+    socket.on("disconnect",() => {
+    clearSoulFromMemory(socket.id)
     })
 
-  })
+    socket.on("passingPeerData", (peerData, soul1Data, soul2ID) => {
+    io.to(soul2ID).emit("matchMadeWithRemoteWebRTC",peerData, soul1Data, socket.id)
+    })
 
-  socket.on("disconnect",() => {
-    console.log("disconnecting: ", socket.id)
-    clearSoulFromMemory(socket.id)
-  })
+    socket.on("rePassingPeerData", (peerData, soul2ID) => {
+    io.to(soul2ID).emit("rePassedStreamData",peerData)
+    })
+}
 
-  socket.on("passingPeerData", (peerData, soul1Data, soul2ID) => {
-    console.log("here passing peer data")
-    io.to(soul2ID).emit("matchMade",peerData, soul1Data, socket.id)
-  })
+io.on("connection", (socket) => {
 
-  socket.on("rePassingPeerData", (peerData, soul2ID) => {
-    console.log("repassing")
-    io.to(soul2ID).emit("rePass",peerData)
-  })
+  setupSocketListeners(socket);
 
 });
 
 setInterval(() => {
     connectSouls()
-    // console.log("log:", soulsActive, interests)
 }, 600)
 
 setInterval(() => {
