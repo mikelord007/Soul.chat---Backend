@@ -68,6 +68,7 @@ const connectSouls = () => {
 const setupSocketListeners = (socket) => {
 
     socket.on("interests", (data) => {
+        console.log("received interests", data)
         soulsActive[socket.id] = data;
     
         data.interests?.forEach((interest) => {
@@ -89,6 +90,11 @@ const setupSocketListeners = (socket) => {
 
     socket.on("rePassingPeerData", (peerData, soul2ID) => {
     io.to(soul2ID).emit("rePassedStreamData",peerData)
+    })
+
+    socket.on("skipSoul", (soul2Id, callback) => {
+        io.to(soul2Id).emit("soulSkipped");
+        callback();
     })
 }
 
