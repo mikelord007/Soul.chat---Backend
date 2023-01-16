@@ -25,11 +25,12 @@ const clearSoulFromMemory = (socketId) => {
     if(socketId in soulsActive) {
 
         soulsActive[socketId].interests.forEach(disconnectedUserInterest => {
-            interests[disconnectedUserInterest] = interests[disconnectedUserInterest].filter(userId => userId !== socketId)
+            if(interests[disconnectedUserInterest]) {
+                interests[disconnectedUserInterest] = interests[disconnectedUserInterest].filter(userId => userId !== socketId)
 
-            if (interests[disconnectedUserInterest].length === 0)
-                delete interests[disconnectedUserInterest]
-
+                if (interests[disconnectedUserInterest].length === 0)
+                    delete interests[disconnectedUserInterest]
+            }
         })
 
         delete soulsActive[socketId]
@@ -50,6 +51,7 @@ const exchangeRTCData = (soul1, soul2) => {
 }
 
 const connectSouls = () => {
+    console.log("interests: ", interests)
     Object.keys(interests).forEach((key) => {
         if(interests[key]?.length > 1) {
             exchangeRTCData(interests[key][0],interests[key][1]);
@@ -73,7 +75,9 @@ const setupSocketListeners = (socket) => {
     
         data.interests?.forEach((interest) => {
             if(interest in interests)
-                interests[interest].push(socket.id)
+                {
+                    if(!interests[interest].includes(socket.id)) interests[interest].push(socket.id)
+                }
             else
                 interests[interest] = [socket.id]
         })
