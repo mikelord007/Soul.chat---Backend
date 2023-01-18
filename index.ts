@@ -67,11 +67,21 @@ const connectSouls = () => {
     }
 }
 
+const addToFreeSouls = (socketID) => {
+    if(!FreeSouls.includes(socketID))
+        FreeSouls.push(socketID)
+}
+
 const setupSocketListeners = (socket) => {
 
     socket.on("interests", (data) => {
         console.log("received interests", data)
         soulsActive[socket.id] = data;
+
+        if(data.interests.length<=0){
+            addToFreeSouls(socket.id)
+            return
+        }
     
         data.interests?.forEach((interest) => {
             if(interest in interests)
@@ -88,17 +98,23 @@ const setupSocketListeners = (socket) => {
     clearSoulFromMemory(socket.id)
     })
 
-    socket.on("passingPeerData", (peerData, soul1Data, soul2ID) => {
-    io.to(soul2ID).emit("matchMadeWithRemoteWebRTC",peerData, soul1Data, socket.id)
+    socket.on("passingPeerData", (peerData, soul1Data, soul2ID, soul2Address) => {
+    io.to(soul2ID).emit("matchMadeWithRemoteWebRTC",peerData, soul1Data, socket.id, soul2Address)
     })
 
-    socket.on("rePassingPeerData", (peerData, soul2ID) => {
-    io.to(soul2ID).emit("rePassedStreamData",peerData)
+    socket.on("rePassingPeerData", (peerData, soul2ID, soul2Address) => {
+    io.to(soul2ID).emit("rePassedStreamData",peerData, soul2Address)
     })
 
     socket.on("skipSoul", (soul2Id, callback) => {
         io.to(soul2Id).emit("soulSkipped");
         callback();
+    })
+
+    socket.on("makeMeFreeSoul",(soulParams) => {
+        clearSoulFromMemory(socket.id)
+        soulsActive[socket.id] = soulParams;
+        addToFreeSouls(socket.id)
     })
 }
 
